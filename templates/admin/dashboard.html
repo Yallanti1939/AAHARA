@@ -324,6 +324,18 @@
             gap: 4px;
         }
 
+        .payment-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #14171A;
+            border: 1px solid var(--border-color);
+        }
+
         .items-list-table {
             width: 100%;
             border-collapse: collapse;
@@ -418,7 +430,7 @@
             font-weight: 600;
         }
 
-        /* Menu Manager Table */
+        /* Menu Manager & Payment Settings Cards */
         .menu-header-bar {
             display: flex;
             justify-content: space-between;
@@ -470,6 +482,20 @@
         input:checked + .slider { background-color: var(--accent-green); }
         input:checked + .slider:before { transform: translateX(18px); }
 
+        .payment-card {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 24px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+        .form-group label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+        .form-input { padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: #121417; color: white; font-size: 13px; font-family: var(--font-ui); }
+
         /* Modal overlay */
         .modal-overlay {
             position: fixed;
@@ -513,10 +539,6 @@
 
         .close-btn { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
 
-        .form-group { display: flex; flex-direction: column; gap: 4px; }
-        .form-group label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-        .form-input { padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border-color); background: #121417; color: white; font-size: 13px; }
-
         /* Printable Receipt Format */
         @media print {
             body * { visibility: hidden; }
@@ -532,7 +554,7 @@
         <div class="brand-logo">A</div>
         <div class="brand-title">
             <h1>Aahara Admin Portal</h1>
-            <p>● Live Orders Sync Active</p>
+            <p>● Live Orders & Payment Sync</p>
         </div>
     </div>
 
@@ -572,6 +594,7 @@
         <div class="tab-bar">
             <button class="nav-tab active" onclick="switchTab('orders', this)">📦 Orders Board</button>
             <button class="nav-tab" onclick="switchTab('menu', this)">🍽️ Menu Manager</button>
+            <button class="nav-tab" onclick="switchTab('payment', this)">💳 UPI & Payment Settings</button>
         </div>
 
         <div class="search-box">
@@ -622,6 +645,48 @@
                 <!-- Rendered via JS -->
             </tbody>
         </table>
+    </div>
+
+    <!-- Payment Settings Tab Section -->
+    <div id="paymentTabSection" style="display: none;">
+        <div class="payment-card">
+            <div>
+                <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 14px;">Restaurant UPI & Bank Account Details 💳</h3>
+                
+                <div class="form-group">
+                    <label>Restaurant UPI ID (VPA)</label>
+                    <input type="text" class="form-input" id="adminUpiId" placeholder="aahara@upi">
+                </div>
+                <div class="form-group">
+                    <label>Account Holder Name</label>
+                    <input type="text" class="form-input" id="adminMerchantName" placeholder="Aahara Foods Pvt Ltd">
+                </div>
+                <div class="form-group">
+                    <label>Bank Name & Branch</label>
+                    <input type="text" class="form-input" id="adminBankName" placeholder="HDFC Bank - Cyber City Branch">
+                </div>
+                <div class="form-group">
+                    <label>Account Number</label>
+                    <input type="text" class="form-input" id="adminAccountNumber" placeholder="987654321098">
+                </div>
+                <div class="form-group">
+                    <label>IFSC Code</label>
+                    <input type="text" class="form-input" id="adminIfscCode" placeholder="HDFC0001234">
+                </div>
+                <div class="form-group">
+                    <label>UPI QR Code Image URL</label>
+                    <input type="text" class="form-input" id="adminQrImageUrl" placeholder="https://api.qrserver.com/..." oninput="updateQrPreview()">
+                </div>
+
+                <button class="admin-btn btn-primary" style="padding: 10px 20px; font-size: 14px; margin-top: 8px;" onclick="savePaymentSettings()">Save Payment Settings</button>
+            </div>
+
+            <div style="text-align: center; border-left: 1px solid var(--border-color); padding-left: 24px;">
+                <h4 style="font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 12px;">Customer QR Code Preview</h4>
+                <img id="adminQrPreviewImg" src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi%3A%2F%2Fpay%3Fpa%3Daahara%40upi%26pn%3DAahara%2520Restaurant%26cu%3DINR" style="width: 200px; height: 200px; border-radius: 14px; border: 1px solid var(--border-color); background: white; padding: 6px;">
+                <div style="font-size: 12px; font-weight: 800; color: var(--primary-color); margin-top: 8px;" id="previewUpiId">aahara@upi</div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -692,6 +757,7 @@
     document.addEventListener("DOMContentLoaded", () => {
         fetchAdminOrders();
         fetchAdminMenu();
+        fetchAdminPaymentSettings();
         setInterval(fetchAdminOrders, 5000);
     });
 
@@ -784,6 +850,13 @@
             const notes = o.notes ? `<div style="color:var(--accent-yellow); margin-top:4px;">📝 <strong>Notes:</strong> ${o.notes}</div>` : '';
             const promo = o.promo_code ? `<span style="color:var(--accent-green);">🎟️ ${o.promo_code} (-₹${o.discount})</span>` : '';
 
+            const pMethod = o.payment_method || 'Cash on Delivery';
+            const pStatus = o.payment_status || 'Pending';
+            const txId = o.transaction_id ? ` (UTR: ${o.transaction_id})` : '';
+
+            let pStatusColor = "var(--accent-yellow)";
+            if (pStatus.includes("Paid")) pStatusColor = "var(--accent-green)";
+
             let actionsHTML = "";
             if (o.status === "Preparing") {
                 actionsHTML = `
@@ -792,6 +865,7 @@
                     </div>
                     <div class="action-btn-row">
                         <button class="action-btn btn-print" onclick="openReceiptModal(${o.order_id})">🖨️ KOT Slip</button>
+                        <button class="action-btn" style="color:var(--accent-green);" onclick="togglePaymentPaid(${o.order_id}, '${pMethod}')">💳 Mark Paid</button>
                         <button class="action-btn" style="color:var(--accent-red);" onclick="updateStatus(${o.order_id}, 'Cancelled')">❌ Cancel</button>
                     </div>
                 `;
@@ -802,6 +876,7 @@
                     </div>
                     <div class="action-btn-row">
                         <button class="action-btn btn-print" onclick="openReceiptModal(${o.order_id})">🖨️ KOT Slip</button>
+                        <button class="action-btn" style="color:var(--accent-green);" onclick="togglePaymentPaid(${o.order_id}, '${pMethod}')">💳 Mark Paid</button>
                         <button class="action-btn" style="color:var(--accent-red);" onclick="updateStatus(${o.order_id}, 'Cancelled')">❌ Cancel</button>
                     </div>
                 `;
@@ -812,6 +887,7 @@
                     </div>
                     <div class="action-btn-row">
                         <button class="action-btn btn-print" onclick="openReceiptModal(${o.order_id})">🖨️ KOT Slip</button>
+                        <button class="action-btn" style="color:var(--accent-green);" onclick="togglePaymentPaid(${o.order_id}, '${pMethod}')">💳 Mark Paid</button>
                         <button class="action-btn" style="color:var(--accent-red);" onclick="updateStatus(${o.order_id}, 'Cancelled')">❌ Cancel</button>
                     </div>
                 `;
@@ -836,6 +912,10 @@
                 <div class="customer-info">
                     <div>👤 <strong>${cName}</strong> (📞 ${cPhone})</div>
                     <div>📍 <strong>Address:</strong> ${cAddr}</div>
+                    <div style="margin-top: 4px;">
+                        <span class="payment-tag">💳 ${pMethod}</span>
+                        <span class="payment-tag" style="color: ${pStatusColor};">${pStatus}${txId}</span>
+                    </div>
                     ${notes}
                 </div>
 
@@ -875,6 +955,25 @@
         }
     }
 
+    async function togglePaymentPaid(orderId, pMethod) {
+        const newPaymentStatus = pMethod === 'UPI' ? 'Paid (UPI)' : 'Paid (COD)';
+        try {
+            const res = await fetch("/admin/api/order/payment-status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ order_id: orderId, payment_status: newPaymentStatus })
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchAdminOrders();
+            } else {
+                alert(data.message || "Failed to update payment status.");
+            }
+        } catch (e) {
+            console.error("Payment status update error:", e);
+        }
+    }
+
     function filterStatus(status, btn) {
         currentFilterStatus = status;
         document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
@@ -889,10 +988,17 @@
         if (tabName === 'orders') {
             document.getElementById("ordersTabSection").style.display = "block";
             document.getElementById("menuTabSection").style.display = "none";
-        } else {
+            document.getElementById("paymentTabSection").style.display = "none";
+        } else if (tabName === 'menu') {
             document.getElementById("ordersTabSection").style.display = "none";
             document.getElementById("menuTabSection").style.display = "block";
+            document.getElementById("paymentTabSection").style.display = "none";
             fetchAdminMenu();
+        } else if (tabName === 'payment') {
+            document.getElementById("ordersTabSection").style.display = "none";
+            document.getElementById("menuTabSection").style.display = "none";
+            document.getElementById("paymentTabSection").style.display = "block";
+            fetchAdminPaymentSettings();
         }
     }
 
@@ -946,6 +1052,57 @@
             });
         } catch (e) {
             console.error("Toggle stock error:", e);
+        }
+    }
+
+    async function fetchAdminPaymentSettings() {
+        try {
+            const res = await fetch("/admin/api/payment-settings");
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById("adminUpiId").value = data.upi_id || '';
+                document.getElementById("adminMerchantName").value = data.merchant_name || '';
+                document.getElementById("adminBankName").value = data.bank_name || '';
+                document.getElementById("adminAccountNumber").value = data.account_number || '';
+                document.getElementById("adminIfscCode").value = data.ifsc_code || '';
+                document.getElementById("adminQrImageUrl").value = data.qr_image_url || '';
+                updateQrPreview();
+            }
+        } catch (e) {
+            console.error("Fetch payment settings error:", e);
+        }
+    }
+
+    function updateQrPreview() {
+        const url = document.getElementById("adminQrImageUrl").value.trim();
+        const upiId = document.getElementById("adminUpiId").value.trim();
+        if (url) document.getElementById("adminQrPreviewImg").src = url;
+        if (upiId) document.getElementById("previewUpiId").innerText = upiId;
+    }
+
+    async function savePaymentSettings() {
+        const upi_id = document.getElementById("adminUpiId").value.trim();
+        const merchant_name = document.getElementById("adminMerchantName").value.trim();
+        const bank_name = document.getElementById("adminBankName").value.trim();
+        const account_number = document.getElementById("adminAccountNumber").value.trim();
+        const ifsc_code = document.getElementById("adminIfscCode").value.trim();
+        const qr_image_url = document.getElementById("adminQrImageUrl").value.trim();
+
+        try {
+            const res = await fetch("/admin/api/payment-settings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ upi_id, merchant_name, bank_name, account_number, ifsc_code, qr_image_url })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert("Payment Settings & UPI Details saved successfully!");
+                updateQrPreview();
+            } else {
+                alert(data.message || "Failed to save settings.");
+            }
+        } catch (e) {
+            console.error("Save payment settings error:", e);
         }
     }
 
@@ -1027,6 +1184,8 @@
             <div>CUSTOMER: ${order.customer_name || 'Guest'}</div>
             <div>PHONE: ${order.customer_phone || 'N/A'}</div>
             <div>ADDRESS: ${order.delivery_address || 'Dine-in'}</div>
+            <div>PAYMENT: ${order.payment_method || 'COD'} (${order.payment_status || 'Pending'})</div>
+            ${order.transaction_id ? `<div>UTR NO: ${order.transaction_id}</div>` : ''}
             ----------------------------------------
             ${itemsText}
             ----------------------------------------

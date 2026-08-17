@@ -198,6 +198,14 @@ tools = [
                     "promo_code": {
                         "type": "string",
                         "description": "Promo code string (e.g. 'AAHARA10'). Pass '' if none."
+                    },
+                    "payment_method": {
+                        "type": "string",
+                        "description": "Payment method: 'UPI' or 'Cash on Delivery'. Pass '' if omitted."
+                    },
+                    "transaction_id": {
+                        "type": "string",
+                        "description": "Transaction UTR number if paid via UPI. Pass '' if none."
                     }
                 },
                 "required": []

@@ -93,6 +93,11 @@ def api_orders():
         return jsonify(track_order(order_id))
     return jsonify(get_order_history())
 
+@app.route("/api/payment-details", methods=["GET"])
+def api_payment_details():
+    from tools import get_restaurant_payment_details
+    return jsonify(get_restaurant_payment_details())
+
 @app.route("/clear_chat", methods=["POST"])
 def clear_chat():
     session["chat_history"] = []

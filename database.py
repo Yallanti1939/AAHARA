@@ -16,8 +16,9 @@ def init_db():
     """
     Initializes the database:
     1. Creates the menu table with rich fields
-    2. Creates the orders table with customer details (customer_name, customer_phone, delivery_address)
-    3. Seeds sample menu items if empty or upgrades existing schema
+    2. Creates the orders table with customer details & payment fields
+    3. Creates settings table for restaurant UPI and payment configs
+    4. Seeds sample menu items if empty or upgrades existing schema
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -62,6 +63,9 @@ def init_db():
         delivery_address TEXT DEFAULT '',
         notes TEXT DEFAULT '',
         promo_code TEXT DEFAULT '',
+        payment_method TEXT DEFAULT 'Cash on Delivery',
+        payment_status TEXT DEFAULT 'Pending',
+        transaction_id TEXT DEFAULT '',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
@@ -82,8 +86,34 @@ def init_db():
         cursor.execute("ALTER TABLE orders ADD COLUMN notes TEXT DEFAULT ''")
     if "promo_code" not in order_columns:
         cursor.execute("ALTER TABLE orders ADD COLUMN promo_code TEXT DEFAULT ''")
+    if "payment_method" not in order_columns:
+        cursor.execute("ALTER TABLE orders ADD COLUMN payment_method TEXT DEFAULT 'Cash on Delivery'")
+    if "payment_status" not in order_columns:
+        cursor.execute("ALTER TABLE orders ADD COLUMN payment_status TEXT DEFAULT 'Pending'")
+    if "transaction_id" not in order_columns:
+        cursor.execute("ALTER TABLE orders ADD COLUMN transaction_id TEXT DEFAULT ''")
     if "created_at" not in order_columns:
         cursor.execute("ALTER TABLE orders ADD COLUMN created_at TEXT")
+
+    # ---------- SETTINGS TABLE (RESTAURANT PAYMENT & QR CONFIGS) ----------
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    )
+    """)
+
+    default_settings = {
+        "upi_id": "aahara@upi",
+        "merchant_name": "Aahara Foods Pvt Ltd",
+        "bank_name": "HDFC Bank - Cyber City Branch",
+        "account_number": "987654321098",
+        "ifsc_code": "HDFC0001234",
+        "qr_image_url": "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi%3A%2F%2Fpay%3Fpa%3Daahara%40upi%26pn%3DAahara%2520Restaurant%26cu%3DINR"
+    }
+
+    for k, v in default_settings.items():
+        cursor.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (k, v))
 
     # ---------- RICH SAMPLE MENU DATA ----------
     cursor.execute("SELECT COUNT(*) FROM menu")
@@ -111,8 +141,8 @@ def init_db():
                VALUES (?, ?, ?, ?, ?, ?, ?, 1)""",
             sample_menu
         )
-        conn.commit()
         
+    conn.commit()
     conn.close()
 
 if __name__ == "__main__":

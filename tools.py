@@ -256,7 +256,7 @@ def view_cart():
         "total": total
     }
 
-def place_order(customer_name="", customer_phone="", delivery_address="", notes="", promo_code=None):
+def place_order(customer_name="", customer_phone="", delivery_address="", notes="", promo_code=None, payment_method="Cash on Delivery", transaction_id=""):
     cart_info = view_cart()
     if cart_info.get("empty"):
         return {"success": False, "message": "Cannot place order, your cart is empty"}
@@ -275,13 +275,19 @@ def place_order(customer_name="", customer_phone="", delivery_address="", notes=
     c_name = (customer_name or "").strip() or "Valued Customer"
     c_phone = (customer_phone or "").strip() or "N/A"
     c_addr = (delivery_address or "").strip() or "Dine-in / Standard Delivery"
+    p_method = (payment_method or "").strip() or "Cash on Delivery"
+    if p_method not in ("UPI", "Cash on Delivery"):
+        p_method = "Cash on Delivery"
+
+    p_status = "Paid (UPI)" if (p_method == "UPI" and (transaction_id or "").strip()) else ("Pending (UPI)" if p_method == "UPI" else "Pending (COD)")
+    tx_id = (transaction_id or "").strip()
 
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        """INSERT INTO orders (items, subtotal, discount, total, status, customer_name, customer_phone, delivery_address, notes, promo_code, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (items_json, subtotal, discount, total, "Preparing", c_name, c_phone, c_addr, notes or "", applied_code, created_str)
+        """INSERT INTO orders (items, subtotal, discount, total, status, customer_name, customer_phone, delivery_address, notes, promo_code, payment_method, payment_status, transaction_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (items_json, subtotal, discount, total, "Preparing", c_name, c_phone, c_addr, notes or "", applied_code, p_method, p_status, tx_id, created_str)
     )
     order_id = cursor.lastrowid
     conn.commit()
@@ -299,8 +305,11 @@ def place_order(customer_name="", customer_phone="", delivery_address="", notes=
         "discount": discount,
         "total": total,
         "status": "Preparing",
+        "payment_method": p_method,
+        "payment_status": p_status,
+        "transaction_id": tx_id,
         "notes": notes,
-        "message": f"Order #{order_id} placed for {c_name}! Delivery to '{c_addr}'. Total: ₹{total:.2f}. Status: Preparing."
+        "message": f"Order #{order_id} placed! Payment Method: {p_method} ({p_status}). Total: ₹{total:.2f}. Status: Preparing."
     }
 
 def track_order(order_id):
@@ -330,6 +339,9 @@ def track_order(order_id):
         "discount": order["discount"] if "discount" in order.keys() else 0.0,
         "total": order["total"],
         "status": order["status"],
+        "payment_method": order["payment_method"] if "payment_method" in order.keys() else "Cash on Delivery",
+        "payment_status": order["payment_status"] if "payment_status" in order.keys() else "Pending",
+        "transaction_id": order["transaction_id"] if "transaction_id" in order.keys() else "",
         "notes": order["notes"] if "notes" in order.keys() else "",
         "created_at": order["created_at"] if "created_at" in order.keys() else "",
         "items": json.loads(order["items"])
@@ -338,7 +350,7 @@ def track_order(order_id):
 def get_order_history():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM orders ORDER BY id DESC LIMIT 20")
+    cursor.execute("SELECT * FROM orders ORDER BY id DESC LIMIT 50")
     rows = cursor.fetchall()
     conn.close()
     
@@ -353,6 +365,9 @@ def get_order_history():
             "discount": r["discount"] if "discount" in r.keys() else 0.0,
             "total": r["total"],
             "status": r["status"],
+            "payment_method": r["payment_method"] if "payment_method" in r.keys() else "Cash on Delivery",
+            "payment_status": r["payment_status"] if "payment_status" in r.keys() else "Pending",
+            "transaction_id": r["transaction_id"] if "transaction_id" in r.keys() else "",
             "notes": r["notes"] if "notes" in r.keys() else "",
             "created_at": r["created_at"] if "created_at" in r.keys() else "",
             "items": json.loads(r["items"])
@@ -542,3 +557,69 @@ def clear_order_history():
     conn.close()
 
     return {"success": True, "message": "All order history has been cleared successfully."}
+
+def get_restaurant_payment_details():
+    """
+    Retrieves Restaurant UPI and Bank details from the settings table.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM settings")
+    rows = cursor.fetchall()
+    conn.close()
+
+    settings = {r["key"]: r["value"] for r in rows}
+    return {
+        "success": True,
+        "upi_id": settings.get("upi_id", "aahara@upi"),
+        "merchant_name": settings.get("merchant_name", "Aahara Foods Pvt Ltd"),
+        "bank_name": settings.get("bank_name", "HDFC Bank - Cyber City Branch"),
+        "account_number": settings.get("account_number", "987654321098"),
+        "ifsc_code": settings.get("ifsc_code", "HDFC0001234"),
+        "qr_image_url": settings.get("qr_image_url", "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi%3A%2F%2Fpay%3Fpa%3Daahara%40upi%26pn%3DAahara%2520Restaurant%26cu%3DINR")
+    }
+
+def update_restaurant_payment_details(upi_id=None, merchant_name=None, bank_name=None, account_number=None, ifsc_code=None, qr_image_url=None):
+    """
+    Updates Restaurant UPI and Bank details in the settings table.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    updates = {
+        "upi_id": upi_id,
+        "merchant_name": merchant_name,
+        "bank_name": bank_name,
+        "account_number": account_number,
+        "ifsc_code": ifsc_code,
+        "qr_image_url": qr_image_url
+    }
+
+    for key, val in updates.items():
+        if val is not None and str(val).strip():
+            cursor.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", (key, str(val).strip()))
+
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": "Restaurant UPI & Payment details updated successfully."}
+
+def update_payment_status(order_id, payment_status):
+    """
+    Updates payment_status for an order (e.g. Paid (UPI), Paid (COD), Pending).
+    """
+    try:
+        order_id = int(order_id)
+    except (ValueError, TypeError):
+        return {"success": False, "message": "order_id must be an integer"}
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE orders SET payment_status = ? WHERE id = ?", (payment_status, order_id))
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+
+    if affected == 0:
+        return {"success": False, "message": f"Order #{order_id} not found."}
+
+    return {"success": True, "order_id": order_id, "payment_status": payment_status, "message": f"Order #{order_id} payment status updated to '{payment_status}'."}

@@ -868,6 +868,31 @@
                     <input type="text" class="form-input" id="orderNotesInput" placeholder="Special Cooking Notes (e.g. extra spicy, no onions)">
                 </div>
 
+                <!-- Payment Method Selection Box -->
+                <div class="input-field-group">
+                    <div class="form-section-title">💳 Payment Method</div>
+                    <div style="display: flex; gap: 16px; margin: 6px 0;">
+                        <label style="font-size: 12px; font-weight: 700; cursor: pointer;">
+                            <input type="radio" name="paymentMethodRadio" value="UPI" onchange="togglePaymentUI('UPI')" checked> 📱 UPI Payment
+                        </label>
+                        <label style="font-size: 12px; font-weight: 700; cursor: pointer;">
+                            <input type="radio" name="paymentMethodRadio" value="Cash on Delivery" onchange="togglePaymentUI('COD')"> 💵 Cash on Delivery
+                        </label>
+                    </div>
+
+                    <div id="upiPaymentBox" style="background: #FAF9F5; border: 1px dashed var(--border-color); border-radius: 12px; padding: 12px; text-align: center; margin-top: 6px;">
+                        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Scan Restaurant UPI QR Code</div>
+                        <img id="cartUpiQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi%3A%2F%2Fpay%3Fpa%3Daahara%40upi%26pn%3DAahara%2520Restaurant%26cu%3DINR" style="width: 140px; height: 140px; border-radius: 10px; margin: 8px auto; display: block; border: 1px solid var(--border-color);">
+                        <div style="font-size: 12px; font-weight: 800; color: var(--primary-color);" id="cartUpiId">aahara@upi</div>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 8px;" id="cartBankInfo">HDFC Bank • Aahara Foods Pvt Ltd</div>
+                        <input type="text" class="form-input" id="upiTxIdInput" placeholder="Enter Transaction UTR No. (Simulated Payment)">
+                    </div>
+
+                    <div id="codPaymentBox" style="display: none; background: #FAF9F5; border: 1px dashed var(--border-color); border-radius: 12px; padding: 12px; font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 6px;">
+                        💵 Pay in cash to our delivery executive when your hot order arrives.
+                    </div>
+                </div>
+
                 <div class="cart-summary" id="cartSummaryBox">
                     <div class="summary-row"><span>Subtotal:</span><span id="summarySubtotal">₹0.00</span></div>
                     <div class="summary-row" style="color: var(--accent-green);"><span>Discount:</span><span id="summaryDiscount">-₹0.00</span></div>
@@ -1113,11 +1138,38 @@
 
     function openCartModal() {
         fetchCartState();
+        fetchPaymentDetails();
         document.getElementById("cartModalOverlay").classList.add("active");
     }
 
     function closeCartModal() {
         document.getElementById("cartModalOverlay").classList.remove("active");
+    }
+
+    function togglePaymentUI(type) {
+        if (type === 'UPI') {
+            document.getElementById("upiPaymentBox").style.display = "block";
+            document.getElementById("codPaymentBox").style.display = "none";
+        } else {
+            document.getElementById("upiPaymentBox").style.display = "none";
+            document.getElementById("codPaymentBox").style.display = "block";
+        }
+    }
+
+    async function fetchPaymentDetails() {
+        try {
+            const res = await fetch("/api/payment-details");
+            const data = await res.json();
+            if (data.success) {
+                if (data.qr_image_url) document.getElementById("cartUpiQrImg").src = data.qr_image_url;
+                if (data.upi_id) document.getElementById("cartUpiId").innerText = data.upi_id;
+                if (data.merchant_name && data.bank_name) {
+                    document.getElementById("cartBankInfo").innerText = `${data.bank_name} • ${data.merchant_name}`;
+                }
+            }
+        } catch (e) {
+            console.error("Fetch payment details error:", e);
+        }
     }
 
     async function openOrdersModal() {
@@ -1140,6 +1192,10 @@
                 const cName = o.customer_name || 'Customer';
                 const cPhone = o.customer_phone ? ` • 📞 ${o.customer_phone}` : '';
                 const cAddr = o.delivery_address ? `<div style="font-size:11px; color:var(--text-color); margin-top:4px;">📍 <strong>Delivery Address:</strong> ${o.delivery_address}</div>` : '';
+                
+                const pMethod = o.payment_method || 'Cash on Delivery';
+                const pStatus = o.payment_status || 'Pending';
+                const txInfo = o.transaction_id ? ` (UTR: ${o.transaction_id})` : '';
 
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; font-weight:700; font-size:14px;">
@@ -1148,6 +1204,9 @@
                     </div>
                     <div style="font-size:11px; color:var(--text-muted); margin: 4px 0;">${o.created_at || ''}</div>
                     ${cAddr}
+                    <div style="font-size:11px; color: var(--primary-color); font-weight: 700; margin: 4px 0;">
+                        💳 Payment: ${pMethod} • Status: ${pStatus}${txInfo}
+                    </div>
                     <div class="stepper">
                         <div class="step active"><div class="step-icon">👨‍🍳</div>Preparing</div>
                         <div class="step ${['Order Ready', 'Out for Delivery', 'Delivered'].includes(o.status) ? 'active' : ''}"><div class="step-icon">🍽️</div>Ready</div>
@@ -1173,12 +1232,17 @@
         const addr = document.getElementById("deliveryAddressInput").value.trim();
         const notes = document.getElementById("orderNotesInput").value.trim();
         const code = document.getElementById("promoInput").value.trim();
+
+        const pMethodRadio = document.querySelector('input[name="paymentMethodRadio"]:checked');
+        const paymentMethod = pMethodRadio ? pMethodRadio.value : "UPI";
+        const txId = document.getElementById("upiTxIdInput").value.trim();
         
-        let prompt = "Please place my order";
+        let prompt = `Please place my order with payment method ${paymentMethod}`;
         if (name) prompt += ` for customer ${name}`;
         if (phone) prompt += `, phone ${phone}`;
         if (addr) prompt += `, delivery address: ${addr}`;
         if (code) prompt += `, with promo code ${code}`;
+        if (txId && paymentMethod === 'UPI') prompt += `, transaction UTR: ${txId}`;
         if (notes) prompt += `, special notes: ${notes}`;
         
         sendQuickPrompt(prompt);

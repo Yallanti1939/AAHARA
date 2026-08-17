@@ -4,7 +4,9 @@ from . import admin_bp
 from tools import (
     get_order_history, update_order_status,
     get_full_menu, toggle_menu_availability, add_menu_item,
-    delete_menu_item, clear_order_history, get_admin_analytics
+    delete_menu_item, clear_order_history, get_admin_analytics,
+    get_restaurant_payment_details, update_restaurant_payment_details,
+    update_payment_status
 )
 
 ADMIN_EMAIL = "admin@aahara.com"
@@ -67,6 +69,18 @@ def api_admin_update_status():
     res = update_order_status(order_id, status)
     return jsonify(res)
 
+@admin_bp.route("/api/order/payment-status", methods=["POST"])
+def api_admin_update_payment_status():
+    if not session.get("admin_logged_in"):
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    order_id = data.get("order_id")
+    payment_status = data.get("payment_status")
+
+    res = update_payment_status(order_id, payment_status)
+    return jsonify(res)
+
 @admin_bp.route("/api/menu", methods=["GET"])
 def api_admin_full_menu():
     if not session.get("admin_logged_in"):
@@ -120,3 +134,23 @@ def api_admin_clear_orders():
 
     res = clear_order_history()
     return jsonify(res)
+
+@admin_bp.route("/api/payment-settings", methods=["GET", "POST"])
+def api_admin_payment_settings():
+    if request.method == "POST":
+        if not session.get("admin_logged_in"):
+            return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+        data = request.get_json() or {}
+        upi_id = data.get("upi_id")
+        merchant_name = data.get("merchant_name")
+        bank_name = data.get("bank_name")
+        account_number = data.get("account_number")
+        ifsc_code = data.get("ifsc_code")
+        qr_image_url = data.get("qr_image_url")
+
+        res = update_restaurant_payment_details(upi_id, merchant_name, bank_name, account_number, ifsc_code, qr_image_url)
+        return jsonify(res)
+
+    # GET request available publicly so customer app can load payment details too
+    return jsonify(get_restaurant_payment_details())

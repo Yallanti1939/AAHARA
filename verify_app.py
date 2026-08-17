@@ -216,6 +216,48 @@ def run_tests():
 
     print("PASS: Clear orders history functionality verified successfully.")
 
+    # --------------------------------------------------
+    # Test 9: Payment Integration (UPI & COD) & Settings
+    # --------------------------------------------------
+    print("\n[TEST 9] Testing Payment Integration (UPI QR, COD & Settings)...")
+    tools.add_to_cart(test_id, 1)
+    upi_order = tools.place_order(
+        customer_name="UPI Tester",
+        delivery_address="Digital City",
+        payment_method="UPI",
+        transaction_id="UTR9876543210"
+    )
+    print(f"UPI Order Result: {upi_order.get('message')}")
+    if upi_order.get("payment_method") != "UPI" or upi_order.get("payment_status") != "Paid (UPI)":
+        print("FAIL: UPI payment method/status mismatch.")
+        return False
+
+    tools.add_to_cart(test_id, 1)
+    cod_order = tools.place_order(
+        customer_name="COD Tester",
+        delivery_address="Cash Lane",
+        payment_method="Cash on Delivery"
+    )
+    print(f"COD Order Result: {cod_order.get('message')}")
+    if cod_order.get("payment_method") != "Cash on Delivery":
+        print("FAIL: COD payment method mismatch.")
+        return False
+
+    pay_status_up = tools.update_payment_status(cod_order["order_id"], "Paid (COD)")
+    print(f"Admin Payment Status Update: {pay_status_up.get('message')}")
+
+    set_up = tools.update_restaurant_payment_details(upi_id="admin@aahara", merchant_name="Aahara Kitchen")
+    print(f"Payment Details Update: {set_up.get('message')}")
+
+    pay_details = tools.get_restaurant_payment_details()
+    if pay_details.get("upi_id") != "admin@aahara":
+        print(f"FAIL: Updated UPI ID expected 'admin@aahara', got '{pay_details.get('upi_id')}'.")
+        return False
+
+    # Clean up test orders after verification
+    tools.clear_order_history()
+    print("PASS: Payment integration (UPI, COD & Settings) verified successfully.")
+
     print("\n==================================================")
     print("ALL ENHANCED TESTS PASSED! Aahara is world-class.")
     print("==================================================")
