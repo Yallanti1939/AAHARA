@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from tools import (
     search_menu, get_full_menu, add_to_cart, remove_from_cart, clear_cart,
-    apply_promo_code, view_cart, place_order, track_order, get_order_history
+    apply_promo_code, view_cart, place_order, track_order, get_order_history,
+    get_restaurant_payment_details
 )
 
 load_dotenv()
@@ -240,6 +241,18 @@ tools = [
                 "required": []
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_payment_details",
+            "description": "Retrieve the restaurant's UPI payment details, including UPI ID (VPA), Merchant Name, Bank details, and UPI QR Code Image URL.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
     }
 ]
 
@@ -277,12 +290,16 @@ def execute_tool(name, arguments):
             customer_phone=arguments.get("customer_phone"),
             delivery_address=arguments.get("delivery_address"),
             notes=arguments.get("notes"),
-            promo_code=arguments.get("promo_code")
+            promo_code=arguments.get("promo_code"),
+            payment_method=arguments.get("payment_method"),
+            transaction_id=arguments.get("transaction_id")
         )
     elif name == "track_order":
         return track_order(arguments.get("order_id"))
     elif name == "get_order_history":
         return get_order_history()
+    elif name == "get_payment_details":
+        return get_restaurant_payment_details()
     else:
         return {"error": f"Unknown tool: {name}"}
 
@@ -324,7 +341,7 @@ def make_completion_call(messages):
 def run_agent(user_message, history=None):
     system_prompt = (
         "You are Aahara, a warm, professional, and helpful AI food ordering assistant for a restaurant.\n"
-        "You have access to tools to search the menu, filter by vegetarian/non-veg preference and price, manage cart items (add, remove, clear), apply promo codes (AAHARA10, WELCOME50), place orders, and track orders.\n"
+        "You have access to tools to search the menu, filter by vegetarian/non-veg preference and price, manage cart items (add, remove, clear), apply promo codes (AAHARA10, WELCOME50), get restaurant payment details, place orders with UPI or Cash on Delivery, and track orders.\n"
         "Always use the tools to get real database data instead of guessing.\n"
         "When a user wants multiple items, call add_to_cart separately for each item.\n"
         "Be concise, engaging, and format responses clearly with item names, prices in ₹, ratings ⭐, and veg/non-veg indicators (🌱/🍗).\n\n"
@@ -333,12 +350,13 @@ def run_agent(user_message, history=None):
         "2. Never invent food items or prices. Always search the menu to verify availability.\n"
         "3. If a user mentions promo codes, recommend AAHARA10 (10% OFF) or WELCOME50 (₹50 OFF on orders > ₹200) and use apply_promo_code tool.\n"
         "4. Allow users to remove items or clear cart using remove_from_cart or clear_cart.\n"
-        "5. BEFORE PLACING AN ORDER: Ask the user for their Name, Phone Number, and Delivery Address if they haven't provided them yet.\n"
-        "6. Always pass customer_name, customer_phone, and delivery_address when calling place_order.\n"
+        "5. BEFORE PLACING AN ORDER: Ask the user for their Name, Phone Number, Delivery Address, and Payment Method ('UPI' or 'Cash on Delivery') if they haven't provided them yet.\n"
+        "6. Always pass customer_name, customer_phone, delivery_address, payment_method, and transaction_id when calling place_order.\n"
         "7. Do not place an order if the cart is empty.\n"
         "8. Provide clear subtotal, discount, and order totals in confirmation messages.\n"
         "9. Use track_order for tracking order status and get_order_history for past orders.\n"
-        "10. Handle special cooking requests (e.g. 'extra spicy', 'no onions') using the notes parameter when placing order."
+        "10. Handle special cooking requests (e.g. 'extra spicy', 'no onions') using the notes parameter when placing order.\n"
+        "11. PAYMENT & UPI QR CODE DISPLAY: When the user asks about payment options or chooses to pay via UPI, ALWAYS call get_payment_details tool first. In your response, display the Restaurant UPI ID (e.g. `aahara@upi`), Merchant Name, Bank Info, AND render the UPI QR Code image using HTML or Markdown image format `<img src=\"<qr_image_url>\" style=\"width:150px; border-radius:10px;\">` or `![UPI QR Code](<qr_image_url>)` so the user can scan the QR code and pay directly from chat!"
     )
     
     clean_history = []
