@@ -364,10 +364,11 @@ def get_order_history():
 
 def update_order_status(order_id, new_status):
     """
-    Updates status of an order (Preparing, Out for Delivery, Delivered, Cancelled).
-    Used by Restaurant Admin Portal.
+    Updates status of an order following strict progression:
+    Preparing -> Order Ready -> Out for Delivery -> Delivered (or Cancelled).
+    Once delivered or cancelled, status cannot be changed again.
     """
-    valid_statuses = ["Preparing", "Out for Delivery", "Delivered", "Cancelled"]
+    valid_statuses = ["Preparing", "Order Ready", "Out for Delivery", "Delivered", "Cancelled"]
     if new_status not in valid_statuses:
         return {"success": False, "message": f"Invalid status '{new_status}'. Allowed: {valid_statuses}"}
 
@@ -378,15 +379,45 @@ def update_order_status(order_id, new_status):
 
     conn = get_connection()
     cursor = conn.cursor()
+    cursor.execute("SELECT status FROM orders WHERE id = ?", (order_id,))
+    row = cursor.fetchone()
+    
+    if row is None:
+        conn.close()
+        return {"success": False, "message": f"Order #{order_id} not found."}
+
+    curr_status = row["status"]
+
+    # 1. Lock check: If already Delivered or Cancelled, prevent any changes
+    if curr_status in ("Delivered", "Cancelled"):
+        conn.close()
+        return {"success": False, "message": f"Order #{order_id} is already '{curr_status}' and cannot be modified again."}
+
+    # 2. Prevent setting the same status again
+    if curr_status == new_status:
+        conn.close()
+        return {"success": False, "message": f"Order #{order_id} is already in '{new_status}' status."}
+
+    # 3. Enforce forward-only progression rules
+    status_order = {
+        "Preparing": 1,
+        "Order Ready": 2,
+        "Out for Delivery": 3,
+        "Delivered": 4
+    }
+
+    if new_status != "Cancelled":
+        curr_rank = status_order.get(curr_status, 1)
+        new_rank = status_order.get(new_status, 1)
+        if new_rank < curr_rank:
+            conn.close()
+            return {"success": False, "message": f"Cannot move order status backwards from '{curr_status}' to '{new_status}'."}
+
     cursor.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
-    affected = cursor.rowcount
     conn.commit()
     conn.close()
 
-    if affected == 0:
-        return {"success": False, "message": f"Order #{order_id} not found."}
-
-    return {"success": True, "order_id": order_id, "status": new_status, "message": f"Order #{order_id} status updated to '{new_status}'."}
+    return {"success": True, "order_id": order_id, "status": new_status, "message": f"Order #{order_id} status updated from '{curr_status}' to '{new_status}'."}
 
 def toggle_menu_availability(item_id, available=None, price=None):
     """
@@ -428,7 +459,7 @@ def get_admin_analytics():
     cursor.execute("SELECT SUM(total) FROM orders WHERE status != 'Cancelled'")
     total_revenue = cursor.fetchone()[0] or 0.0
 
-    cursor.execute("SELECT COUNT(*) FROM orders WHERE status IN ('Preparing', 'Out for Delivery')")
+    cursor.execute("SELECT COUNT(*) FROM orders WHERE status IN ('Preparing', 'Order Ready', 'Out for Delivery')")
     active_orders = cursor.fetchone()[0]
 
     cursor.execute("SELECT COUNT(*) FROM orders WHERE status = 'Delivered'")

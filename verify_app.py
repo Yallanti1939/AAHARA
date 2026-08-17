@@ -140,9 +140,9 @@ def run_tests():
     print("PASS: Place order, order tracking, and history with customer details succeed.")
 
     # --------------------------------------------------
-    # Test 6: Restaurant Admin Portal Status Sync
+    # Test 6: Sequential Status Progression & One-Way Locking
     # --------------------------------------------------
-    print("\n[TEST 6] Testing Restaurant Admin Status Sync (Preparing -> Out for Delivery -> Delivered)...")
+    print("\n[TEST 6] Testing Sequential Status Progression (Preparing -> Order Ready -> Out for Delivery -> Delivered -> Locked)...")
     
     # 1. Add item to cart and place a fresh order
     tools.add_to_cart(test_id, 1)
@@ -150,26 +150,35 @@ def run_tests():
     order_id = new_order["order_id"]
     print(f"Created Test Order #{order_id}, initial status={new_order['status']}")
 
-    # 2. Update status from Restaurant Admin side to 'Out for Delivery'
-    admin_up1 = tools.update_order_status(order_id, "Out for Delivery")
-    print(f"Admin Status Update 1: {admin_up1.get('message')}")
-    
-    # 3. Verify Customer tracking sees new status immediately
-    cust_track1 = tools.track_order(order_id)
-    if cust_track1["status"] != "Out for Delivery":
-        print(f"FAIL: Customer tracking did not receive admin status update. Got '{cust_track1['status']}'.")
+    # 2. Advance to 'Order Ready'
+    up1 = tools.update_order_status(order_id, "Order Ready")
+    print(f"Status Step 1 (Order Ready): {up1.get('message')}")
+    if not up1.get("success") or tools.track_order(order_id)["status"] != "Order Ready":
+        print("FAIL: Could not update to 'Order Ready'.")
         return False
 
-    # 4. Update status to 'Delivered'
-    admin_up2 = tools.update_order_status(order_id, "Delivered")
-    print(f"Admin Status Update 2: {admin_up2.get('message')}")
-    
-    cust_track2 = tools.track_order(order_id)
-    if cust_track2["status"] != "Delivered":
-        print(f"FAIL: Customer tracking did not receive final 'Delivered' status.")
+    # 3. Advance to 'Out for Delivery'
+    up2 = tools.update_order_status(order_id, "Out for Delivery")
+    print(f"Status Step 2 (Out for Delivery): {up2.get('message')}")
+    if not up2.get("success") or tools.track_order(order_id)["status"] != "Out for Delivery":
+        print("FAIL: Could not update to 'Out for Delivery'.")
         return False
 
-    print("PASS: Inter-connected real-time status synchronization verified successfully.")
+    # 4. Advance to 'Delivered'
+    up3 = tools.update_order_status(order_id, "Delivered")
+    print(f"Status Step 3 (Delivered): {up3.get('message')}")
+    if not up3.get("success") or tools.track_order(order_id)["status"] != "Delivered":
+        print("FAIL: Could not update to 'Delivered'.")
+        return False
+
+    # 5. Verify locking rule: Attempting to modify status after Delivered MUST FAIL!
+    up_locked = tools.update_order_status(order_id, "Preparing")
+    print(f"Lock Rule Check (Attempt backward change): {up_locked.get('message')}")
+    if up_locked.get("success"):
+        print("FAIL: Locking rule violated! Status was allowed to change after Delivered.")
+        return False
+
+    print("PASS: Sequential progression and status locking verified successfully.")
 
     print("\n==================================================")
     print("ALL ENHANCED TESTS PASSED! Aahara is world-class.")

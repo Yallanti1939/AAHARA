@@ -1149,9 +1149,9 @@
                     <div style="font-size:11px; color:var(--text-muted); margin: 4px 0;">${o.created_at || ''}</div>
                     ${cAddr}
                     <div class="stepper">
-                        <div class="step active"><div class="step-icon">📝</div>Placed</div>
-                        <div class="step ${o.status !== 'Placed' ? 'active' : ''}"><div class="step-icon">👨‍🍳</div>Preparing</div>
-                        <div class="step ${o.status === 'Delivered' ? 'active' : ''}"><div class="step-icon">🛵</div>On Way</div>
+                        <div class="step active"><div class="step-icon">👨‍🍳</div>Preparing</div>
+                        <div class="step ${['Order Ready', 'Out for Delivery', 'Delivered'].includes(o.status) ? 'active' : ''}"><div class="step-icon">🍽️</div>Ready</div>
+                        <div class="step ${['Out for Delivery', 'Delivered'].includes(o.status) ? 'active' : ''}"><div class="step-icon">🛵</div>On Way</div>
                         <div class="step ${o.status === 'Delivered' ? 'active' : ''}"><div class="step-icon">🎉</div>Delivered</div>
                     </div>
                 `;
