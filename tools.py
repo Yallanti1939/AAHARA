@@ -446,6 +446,58 @@ def toggle_menu_availability(item_id, available=None, price=None):
     conn.close()
     return {"success": True, "message": f"Menu item #{item_id} updated successfully."}
 
+def add_menu_item(name, category, price, is_veg=1, description="", image_url=""):
+    """
+    Creates a new menu item in the database.
+    """
+    name_clean = (name or "").strip()
+    cat_clean = (category or "").strip()
+    if not name_clean or not cat_clean:
+        return {"success": False, "message": "Item name and category are required."}
+
+    try:
+        p_val = float(price)
+        veg_val = 1 if is_veg in (True, 1, "1", "true") else 0
+    except (ValueError, TypeError):
+        return {"success": False, "message": "Invalid price value."}
+
+    img = (image_url or "").strip() or "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80"
+    desc = (description or "").strip() or f"Delicious {name_clean}"
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        """INSERT INTO menu (name, category, price, is_veg, description, rating, image_url, available)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 1)""",
+        (name_clean, cat_clean, p_val, veg_val, desc, 4.5, img)
+    )
+    item_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return {"success": True, "item_id": item_id, "message": f"Added '{name_clean}' to menu successfully."}
+
+def delete_menu_item(item_id):
+    """
+    Deletes a menu item from the database.
+    """
+    try:
+        item_id = int(item_id)
+    except (ValueError, TypeError):
+        return {"success": False, "message": "item_id must be an integer"}
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM menu WHERE id = ?", (item_id,))
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+
+    if affected == 0:
+        return {"success": False, "message": f"Item #{item_id} not found."}
+
+    return {"success": True, "message": f"Deleted item #{item_id} from menu."}
+
 def get_admin_analytics():
     """
     Calculates summary metrics for the restaurant dashboard: total revenue, order counts.

@@ -180,6 +180,25 @@ def run_tests():
 
     print("PASS: Sequential progression and status locking verified successfully.")
 
+    # --------------------------------------------------
+    # Test 7: Admin Menu Management (Add & Delete Dish)
+    # --------------------------------------------------
+    print("\n[TEST 7] Testing Admin Menu Management (Add & Delete Dish)...")
+    add_res = tools.add_menu_item("Chef's Special Special Biryani", "Biryani", 349.0, 0, "Aromatic spice infused biryani", "")
+    print(f"Add Dish Result: {add_res.get('message')}")
+    if not add_res.get("success"):
+        print("FAIL: Could not add menu item.")
+        return False
+
+    new_item_id = add_res["item_id"]
+    del_res = tools.delete_menu_item(new_item_id)
+    print(f"Delete Dish Result: {del_res.get('message')}")
+    if not del_res.get("success"):
+        print("FAIL: Could not delete menu item.")
+        return False
+
+    print("PASS: Admin menu management (add & delete) verified successfully.")
+
     print("\n==================================================")
     print("ALL ENHANCED TESTS PASSED! Aahara is world-class.")
     print("==================================================")

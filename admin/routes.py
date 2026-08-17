@@ -3,7 +3,8 @@ from flask import render_template, request, jsonify, session, redirect, url_for
 from . import admin_bp
 from tools import (
     get_order_history, update_order_status,
-    get_full_menu, toggle_menu_availability, get_admin_analytics
+    get_full_menu, toggle_menu_availability, add_menu_item,
+    delete_menu_item, get_admin_analytics
 )
 
 ADMIN_EMAIL = "admin@aahara.com"
@@ -83,4 +84,31 @@ def api_admin_toggle_menu():
     price = data.get("price")
 
     res = toggle_menu_availability(item_id, available, price)
+    return jsonify(res)
+
+@admin_bp.route("/api/menu/add", methods=["POST"])
+def api_admin_add_menu():
+    if not session.get("admin_logged_in"):
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    name = data.get("name")
+    category = data.get("category")
+    price = data.get("price")
+    is_veg = data.get("is_veg", 1)
+    description = data.get("description", "")
+    image_url = data.get("image_url", "")
+
+    res = add_menu_item(name, category, price, is_veg, description, image_url)
+    return jsonify(res)
+
+@admin_bp.route("/api/menu/delete", methods=["POST"])
+def api_admin_delete_menu():
+    if not session.get("admin_logged_in"):
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+    data = request.get_json() or {}
+    item_id = data.get("item_id")
+
+    res = delete_menu_item(item_id)
     return jsonify(res)
