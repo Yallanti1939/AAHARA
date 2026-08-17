@@ -30,10 +30,10 @@ def chat():
     except Exception as e:
         print(f"[ERROR] {e}")
         error_msg = str(e)
-        if "insufficient_quota" in error_msg or "credit_balance_exhausted" in error_msg or "429" in error_msg:
-            return jsonify({"response": "API quota or credit balance exhausted. Please check your API account settings or update your .env file."})
-        if "APIKey" in error_msg or "api_key" in error_msg or "API_KEY" in error_msg:
-            return jsonify({"response": "API Key is missing or invalid. Please check your .env configuration."})
+        if "insufficient_quota" in error_msg.lower() or "quota" in error_msg.lower() or "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            return jsonify({"response": f"⚠️ API Quota / Rate Limit Exhausted ({error_msg}). Please update your GROQ_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY in your .env file."})
+        if "403" in error_msg or "Forbidden" in error_msg or "APIKey" in error_msg or "api_key" in error_msg or "API_KEY" in error_msg:
+            return jsonify({"response": f"⚠️ API Key Error ({error_msg}). Please check or update your API keys in your .env file."})
         return jsonify({"response": f"Sorry, something went wrong while processing your request: {error_msg}"})
 
 @user_bp.route("/cart", methods=["GET"])
