@@ -39,7 +39,7 @@ def search_menu(query=None, is_veg=None, max_price=None):
             pass
 
     where_clause = " AND ".join(conditions)
-    sql = f"SELECT id, name, category, price, is_veg, description, rating, image_url FROM menu WHERE {where_clause} ORDER BY category, name"
+    sql = f"SELECT id, name, category, price, is_veg, description, rating, image_url, available FROM menu WHERE {where_clause} ORDER BY category, name"
     
     cursor.execute(sql, params)
     rows = cursor.fetchall()
@@ -52,8 +52,17 @@ def search_menu(query=None, is_veg=None, max_price=None):
     
     return {"found": True, "count": len(results), "items": results}
 
-def get_full_menu():
-    return search_menu("all")
+def get_full_menu(include_unavailable=False):
+    conn = get_connection()
+    cursor = conn.cursor()
+    if include_unavailable:
+        cursor.execute("SELECT id, name, category, price, is_veg, description, rating, image_url, available FROM menu ORDER BY category, name")
+    else:
+        cursor.execute("SELECT id, name, category, price, is_veg, description, rating, image_url, available FROM menu WHERE available = 1 ORDER BY category, name")
+    rows = cursor.fetchall()
+    conn.close()
+    items = [dict(r) for r in rows]
+    return {"found": True, "count": len(items), "items": items}
 
 def add_to_cart(item_id, quantity=1):
     try:
@@ -248,9 +257,6 @@ def view_cart():
     }
 
 def place_order(customer_name="", customer_phone="", delivery_address="", notes="", promo_code=None):
-    """
-    Places order with full customer details (customer_name, customer_phone, delivery_address), cart items, notes, and saves to database.
-    """
     cart_info = view_cart()
     if cart_info.get("empty"):
         return {"success": False, "message": "Cannot place order, your cart is empty"}
@@ -332,7 +338,7 @@ def track_order(order_id):
 def get_order_history():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM orders ORDER BY id DESC LIMIT 5")
+    cursor.execute("SELECT * FROM orders ORDER BY id DESC LIMIT 20")
     rows = cursor.fetchall()
     conn.close()
     
@@ -343,10 +349,100 @@ def get_order_history():
             "customer_name": r["customer_name"] if "customer_name" in r.keys() else "Customer",
             "customer_phone": r["customer_phone"] if "customer_phone" in r.keys() else "",
             "delivery_address": r["delivery_address"] if "delivery_address" in r.keys() else "",
+            "subtotal": r["subtotal"] if "subtotal" in r.keys() else r["total"],
+            "discount": r["discount"] if "discount" in r.keys() else 0.0,
             "total": r["total"],
             "status": r["status"],
+            "notes": r["notes"] if "notes" in r.keys() else "",
             "created_at": r["created_at"] if "created_at" in r.keys() else "",
             "items": json.loads(r["items"])
         })
         
     return {"count": len(history), "orders": history}
+
+# ---------- RESTAURANT ADMIN TOOLING ----------
+
+def update_order_status(order_id, new_status):
+    """
+    Updates status of an order (Preparing, Out for Delivery, Delivered, Cancelled).
+    Used by Restaurant Admin Portal.
+    """
+    valid_statuses = ["Preparing", "Out for Delivery", "Delivered", "Cancelled"]
+    if new_status not in valid_statuses:
+        return {"success": False, "message": f"Invalid status '{new_status}'. Allowed: {valid_statuses}"}
+
+    try:
+        order_id = int(order_id)
+    except (ValueError, TypeError):
+        return {"success": False, "message": "order_id must be an integer"}
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+
+    if affected == 0:
+        return {"success": False, "message": f"Order #{order_id} not found."}
+
+    return {"success": True, "order_id": order_id, "status": new_status, "message": f"Order #{order_id} status updated to '{new_status}'."}
+
+def toggle_menu_availability(item_id, available=None, price=None):
+    """
+    Updates menu item availability (1 for in stock, 0 for out of stock) or price.
+    """
+    try:
+        item_id = int(item_id)
+    except (ValueError, TypeError):
+        return {"success": False, "message": "item_id must be an integer"}
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    if available is not None:
+        avail_val = 1 if available in (True, 1, "1", "true") else 0
+        cursor.execute("UPDATE menu SET available = ? WHERE id = ?", (avail_val, item_id))
+
+    if price is not None:
+        try:
+            p_val = float(price)
+            cursor.execute("UPDATE menu SET price = ? WHERE id = ?", (p_val, item_id))
+        except (ValueError, TypeError):
+            pass
+
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": f"Menu item #{item_id} updated successfully."}
+
+def get_admin_analytics():
+    """
+    Calculates summary metrics for the restaurant dashboard: total revenue, order counts.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM orders")
+    total_orders = cursor.fetchone()[0]
+
+    cursor.execute("SELECT SUM(total) FROM orders WHERE status != 'Cancelled'")
+    total_revenue = cursor.fetchone()[0] or 0.0
+
+    cursor.execute("SELECT COUNT(*) FROM orders WHERE status IN ('Preparing', 'Out for Delivery')")
+    active_orders = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM orders WHERE status = 'Delivered'")
+    delivered_orders = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM orders WHERE status = 'Cancelled'")
+    cancelled_orders = cursor.fetchone()[0]
+
+    conn.close()
+
+    return {
+        "total_orders": total_orders,
+        "total_revenue": round(total_revenue, 2),
+        "active_orders": active_orders,
+        "delivered_orders": delivered_orders,
+        "cancelled_orders": cancelled_orders
+    }

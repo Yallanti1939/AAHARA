@@ -1,18 +1,24 @@
 # Aahara — AI-Powered Culinary & Food Ordering Assistant 🍽️🤖
 
-**Aahara** is an intelligent, multi-provider AI Food Ordering web application built with **Flask**, **SQLite**, and **Modern Vanilla UI/CSS**. It allows users to interact with an AI Culinary Assistant to explore menus, filter vegetarian and budget-friendly dishes, manage cart items, apply promo codes, collect delivery details, and track live order progress.
+**Aahara** is an intelligent, multi-provider AI Food Ordering web application built with **Flask**, **SQLite**, and **Modern Vanilla UI/CSS**. It features both a **Customer AI Assistant App** and an interconnected **Restaurant Admin Web Portal** for real-time order status management.
 
 ---
 
 ## 🌟 Key Features
 
 - **🤖 Intelligent Multi-LLM Agent**: Powered by **Groq** (`gpt-oss-120b`), **Google Gemini** (`gemini-3.5-flash`), or **OpenAI** (`gpt-4o-mini`) with seamless fallback.
-- **🍽️ Interactive Visual Menu Gallery**: Dynamic category tabs (*Pizza, Burgers, Biryani, Sides, Drinks, Desserts*), Veg/Non-Veg badges (🌱/🍗), star ratings ⭐, descriptions, and 1-click **`+ Add`** buttons.
+- **👨‍🍳 Restaurant Admin Web Portal (`/admin`)**: Dedicated portal for kitchen staff to manage orders in real-time.
+  - **Admin Credentials**: Email: `Admin@aahara.com` | Password: `Aahara@1939.`
+  - **Live Order Board**: View incoming customer orders, customer details, and special cooking notes.
+  - **Status Stepper Controls**: Update order status (`Preparing 👨‍🍳` $\rightarrow$ `Out for Delivery 🛵` $\rightarrow$ `Delivered 🎉` / `Cancelled ❌`).
+  - **Inter-Connected Database**: Order status updates on the Admin portal immediately sync to customer chat and order receipts.
+  - **Menu Stock Manager**: Toggle items in stock / out of stock in real-time.
+- **🍽️ Interactive Visual Menu Gallery**: Category tabs (*Pizza, Burgers, Biryani, Sides, Drinks, Desserts*), Veg/Non-Veg badges (🌱/🍗), ratings ⭐, descriptions, and 1-click **`+ Add`** buttons.
 - **🛍️ Full Cart Controls**: Modify item quantities, remove items, or clear cart via AI chat or visual Cart Drawer.
 - **🌱 Dietary & Budget Filters**: Search for dishes based on vegetarian preference (`is_veg`) or budget limits (`max_price`).
 - **🎟️ Promo Codes & Discount Engine**: Apply discount codes like `AAHARA10` (10% OFF) or `WELCOME50` (₹50 OFF).
 - **👤 Customer Details & Order Checkout**: Collect customer name, phone number, delivery address, and special cooking notes (*"extra spicy"*).
-- **📦 Live Order Tracker & Receipts**: Track order status timeline (`Preparing 👨‍🍳` $\rightarrow$ `Out for Delivery 🛵` $\rightarrow$ `Delivered 🎉`).
+- **📦 Live Order Tracker & Receipts**: Track order status timeline in real-time.
 - **🎙️ Voice Dictation**: Speech-to-text input via browser Web Speech API.
 
 ---
@@ -60,12 +66,16 @@ GEMINI_API_KEY=your_gemini_key_here
 python database.py
 python app.py
 ```
-Open **`http://127.0.0.1:5000`** in your browser.
+
+- **Customer App**: **`http://127.0.0.1:5000`**
+- **Restaurant Admin Portal**: **`http://127.0.0.1:5000/admin`**
+  - **Login Email**: `Admin@aahara.com`
+  - **Login Password**: `Aahara@1939.`
 
 ---
 
 ## 🧪 Verification & Testing
-Run the automated test suite to verify database schemas, cart tools, promo codes, and order tracking:
+Run the automated test suite to verify database schemas, cart tools, promo codes, customer details, and admin status sync:
 ```bash
 python verify_app.py
 ```

@@ -139,6 +139,38 @@ def run_tests():
 
     print("PASS: Place order, order tracking, and history with customer details succeed.")
 
+    # --------------------------------------------------
+    # Test 6: Restaurant Admin Portal Status Sync
+    # --------------------------------------------------
+    print("\n[TEST 6] Testing Restaurant Admin Status Sync (Preparing -> Out for Delivery -> Delivered)...")
+    
+    # 1. Add item to cart and place a fresh order
+    tools.add_to_cart(test_id, 1)
+    new_order = tools.place_order(customer_name="Admin Sync Test", delivery_address="Kitchen Test Bench")
+    order_id = new_order["order_id"]
+    print(f"Created Test Order #{order_id}, initial status={new_order['status']}")
+
+    # 2. Update status from Restaurant Admin side to 'Out for Delivery'
+    admin_up1 = tools.update_order_status(order_id, "Out for Delivery")
+    print(f"Admin Status Update 1: {admin_up1.get('message')}")
+    
+    # 3. Verify Customer tracking sees new status immediately
+    cust_track1 = tools.track_order(order_id)
+    if cust_track1["status"] != "Out for Delivery":
+        print(f"FAIL: Customer tracking did not receive admin status update. Got '{cust_track1['status']}'.")
+        return False
+
+    # 4. Update status to 'Delivered'
+    admin_up2 = tools.update_order_status(order_id, "Delivered")
+    print(f"Admin Status Update 2: {admin_up2.get('message')}")
+    
+    cust_track2 = tools.track_order(order_id)
+    if cust_track2["status"] != "Delivered":
+        print(f"FAIL: Customer tracking did not receive final 'Delivered' status.")
+        return False
+
+    print("PASS: Inter-connected real-time status synchronization verified successfully.")
+
     print("\n==================================================")
     print("ALL ENHANCED TESTS PASSED! Aahara is world-class.")
     print("==================================================")
