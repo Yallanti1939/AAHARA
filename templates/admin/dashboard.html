@@ -457,13 +457,12 @@
     document.addEventListener("DOMContentLoaded", () => {
         fetchAdminOrders();
         fetchAdminMenu();
-        // Polling every 5 seconds for live order synchronization
         setInterval(fetchAdminOrders, 5000);
     });
 
     async function fetchAdminOrders() {
         try {
-            const res = await fetch("/api/admin/orders");
+            const res = await fetch("/admin/api/orders");
             const data = await res.json();
             if (data.success) {
                 ordersCache = data.orders || [];
@@ -553,7 +552,7 @@
 
     async function updateStatus(orderId, newStatus) {
         try {
-            const res = await fetch("/api/admin/order/status", {
+            const res = await fetch("/admin/api/order/status", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ order_id: orderId, status: newStatus })
@@ -592,7 +591,7 @@
 
     async function fetchAdminMenu() {
         try {
-            const res = await fetch("/api/admin/menu");
+            const res = await fetch("/admin/api/menu");
             const data = await res.json();
             if (data.found && data.items) {
                 renderMenuTable(data.items);
@@ -630,7 +629,7 @@
 
     async function toggleMenuStock(itemId, isChecked) {
         try {
-            await fetch("/api/admin/menu/toggle", {
+            await fetch("/admin/api/menu/toggle", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ item_id: itemId, available: isChecked ? 1 : 0 })
