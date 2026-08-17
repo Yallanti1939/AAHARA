@@ -784,7 +784,7 @@
             <button class="header-btn" onclick="resetChat()">
                 🔄 Reset
             </button>
-            <a href="/admin/login" class="header-btn" style="text-decoration:none;" target="_blank">👨‍🍳 Admin</a>
+            <a href="/admin/login" class="header-btn" style="text-decoration:none;" target="_blank">👨‍🍳 Admin Portal</a>
         </div>
     </header>
 
@@ -798,35 +798,34 @@
                     <button class="tab-pill" onclick="filterCategory('veg', this)">🌱 Veg</button>
                     <button class="tab-pill" onclick="filterCategory('nonveg', this)">🍗 Non-Veg</button>
                     <button class="tab-pill" onclick="filterCategory('Pizza', this)">🍕 Pizza</button>
-                    <button class="tab-pill" onclick="filterCategory('Burger', this)">🍔 Burgers</button>
-                    <button class="tab-pill" onclick="filterCategory('Biryani', this)">🍚 Biryani</button>
+                    <button class="tab-pill" onclick="filterCategory('Burger', this)">🍔 Burger</button>
+                    <button class="tab-pill" onclick="filterCategory('Biryani', this)">🍲 Biryani</button>
+                    <button class="tab-pill" onclick="filterCategory('Sides', this)">🍟 Sides</button>
                     <button class="tab-pill" onclick="filterCategory('Drinks', this)">🥤 Drinks</button>
                     <button class="tab-pill" onclick="filterCategory('Desserts', this)">🍰 Desserts</button>
                 </div>
             </div>
-
+            
             <div class="menu-grid" id="menuGrid">
-                <!-- Food Cards Rendered Dynamically -->
+                <!-- Rendered dynamically via JS -->
             </div>
         </aside>
 
-        <!-- Main Chat Area -->
+        <!-- Main Conversational Interface -->
         <main class="chat-screen">
             <div class="messages-container" id="messagesContainer">
                 <div class="message agent-message">
-                    Welcome to <strong>Aahara</strong>! 🍽️<br>
-                    I can help you explore our menu, filter vegetarian or budget dishes, manage your cart, apply discount codes, collect delivery details, and track live orders.<br><br>
-                    What would you like to order today?
+                    Welcome to <strong>Aahara</strong>! 👨‍🍳 I'm your AI culinary assistant.<br>
+                    You can ask me to search dishes (dietary & budget filters), add items to cart, or place your order with UPI / Cash on Delivery! How can I help you today?
                 </div>
             </div>
 
-            <!-- Quick Action Prompt Chips -->
+            <!-- Suggestion Prompt Chips -->
             <div class="suggestion-chips">
-                <div class="chip" onclick="sendQuickPrompt('Show me the full menu with prices')">📋 Full Menu</div>
-                <div class="chip" onclick="sendQuickPrompt('Show me vegetarian dishes under ₹200')">🌱 Veg Under ₹200</div>
-                <div class="chip" onclick="sendQuickPrompt('Apply promo code AAHARA10')">🎟️ Promo AAHARA10</div>
-                <div class="chip" onclick="sendQuickPrompt('What is in my cart?')">🛒 View Cart</div>
-                <div class="chip" onclick="sendQuickPrompt('Track my latest order')">📦 Track Order</div>
+                <div class="chip" onclick="sendQuickPrompt('Show me vegetarian options under 200 rupees')">🌱 Veg under ₹200</div>
+                <div class="chip" onclick="sendQuickPrompt('What are your best biryanis and pizzas?')">🍕 Biryanis & Pizzas</div>
+                <div class="chip" onclick="sendQuickPrompt('Add Hyderabadi Chicken Biryani and Mango Lassi to cart')">🛒 Quick Add Meal</div>
+                <div class="chip" onclick="sendQuickPrompt('Check my current cart')">📋 View Cart</div>
             </div>
 
             <!-- Input Bar -->
@@ -1128,7 +1127,9 @@
     }
 
     function handleKeyPress(e) {
-        if (e.key === "Enter") sendMessage();
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
     }
 
     function toggleMenuDrawer() {
@@ -1272,18 +1273,17 @@
         btn.classList.add("listening");
         recognition.start();
 
-        recognition.onresult = function(event) {
-            const transcript = event.results[0][0].transcript;
+        recognition.onresult = (e) => {
+            const transcript = e.results[0][0].transcript;
             document.getElementById("chatInput").value = transcript;
             btn.classList.remove("listening");
-            sendMessage();
         };
 
-        recognition.onerror = function() {
+        recognition.onerror = () => {
             btn.classList.remove("listening");
         };
 
-        recognition.onend = function() {
+        recognition.onend = () => {
             btn.classList.remove("listening");
         };
     }
