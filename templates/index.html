@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aahara — Premium AI Food Ordering & Culinary Assistant</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #F7F5F0;
+            --panel-bg: #FFFFFF;
+            --primary-color: #D35400; /* Terracotta */
+            --primary-hover: #A04000;
+            --primary-light: #FDF2E9;
+            --accent-green: #27AE60;
+            --accent-red: #C0392B;
+            --text-color: #2C3E50;
+            --text-muted: #7F8C8D;
+            --border-color: #EAE5D9;
+            --shadow-color: rgba(44, 62, 80, 0.08);
+            --agent-msg-bg: #F0EDE5;
+            --user-msg-bg: #D35400;
+            --font-ui: 'Outfit', sans-serif;
+            --font-serif: 'Playfair Display', serif;
+            --border-radius: 20px;
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* App Layout Container */
+        .app-container {
+            width: 100%;
+            max-width: 1180px;
+            height: 92vh;
+            background-color: var(--panel-bg);
+            border-radius: 24px;
+            box-shadow: 0 16px 48px var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Header */
+        .chat-header {
+            padding: 16px 28px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--panel-bg);
+            z-index: 20;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary-color), #E67E22);
+            color: white;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-serif);
+            font-size: 26px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(211, 84, 0, 0.3);
+        }
+
+        .brand-title h1 {
+            font-family: var(--font-serif);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-color);
+            line-height: 1.1;
+        }
+
+        .brand-title p {
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-btn {
+            background-color: #F8F6F0;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all var(--transition-speed);
+        }
+
+        .header-btn:hover {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            border-color: rgba(211, 84, 0, 0.3);
+        }
+
+        .cart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 14px rgba(211, 84, 0, 0.3);
+        }
+
+        .cart-btn:hover {
+            background-color: var(--primary-hover);
+            color: white;
+        }
+
+        .cart-badge {
+            background-color: white;
+            color: var(--primary-color);
+            font-size: 11px;
+            font-weight: 800;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Body Split Layout */
+        .main-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Visual Menu Sidebar / Gallery Drawer */
+        .menu-drawer {
+            width: 380px;
+            background-color: #FAF9F5;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: transform var(--transition-speed);
+            z-index: 15;
+            overflow: hidden;
+        }
+
+        .menu-drawer-header {
+            padding: 16px 20px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .menu-drawer-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        /* Category Filter Tabs */
+        .category-tabs {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+        }
+
+        .category-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-pill {
+            padding: 6px 12px;
+            border-radius: 20px;
+            background-color: #EFECE6;
+            color: var(--text-color);
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .tab-pill.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .menu-grid {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .food-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .food-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px var(--shadow-color);
+        }
+
+        .food-card img {
+            width: 72px;
+            height: 72px;
+            border-radius: 12px;
+            object-fit: cover;
+            background-color: #EEE;
+        }
+
+        .food-details {
+            flex: 1;
+        }
+
+        .food-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .food-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .food-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        .badge-veg { background-color: #E8F8F5; color: var(--accent-green); border: 1px solid #A3E4D7; }
+        .badge-nonveg { background-color: #FDEDEC; color: var(--accent-red); border: 1px solid #F9E79F; }
+
+        .food-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.3;
+            margin-bottom: 6px;
+        }
+
+        .food-bottom-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .food-price {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+
+        .food-rating {
+            font-size: 11px;
+            color: #F39C12;
+            font-weight: 700;
+        }
+
+        .add-card-btn {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            border: 1px solid rgba(211, 84, 0, 0.3);
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-card-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Main Chat Area */
+        .chat-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background-color: #FAF9F6;
+            position: relative;
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 14px 18px;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .agent-message {
+            align-self: flex-start;
+            background-color: var(--agent-msg-bg);
+            color: var(--text-color);
+            border-bottom-left-radius: 4px;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--user-msg-bg);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+            overflow: hidden;
+            font-size: 12px;
+        }
+
+        .message th, .message td {
+            padding: 6px 10px;
+            border: 1px solid rgba(0,0,0,0.08);
+            text-align: left;
+        }
+
+        .message th {
+            background-color: rgba(211, 84, 0, 0.1);
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        /* Quick Action Prompt Chips */
+        .suggestion-chips {
+            padding: 8px 24px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            background-color: rgba(250, 249, 246, 0.9);
+        }
+
+        .suggestion-chips::-webkit-scrollbar { display: none; }
+
+        .chip {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-color);
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+
+        .chip:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background-color: var(--primary-light);
+        }
+
+        /* Input Bar */
+        .input-area {
+            padding: 16px 24px;
+            background-color: var(--panel-bg);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background-color: #F8F6F0;
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 4px 16px;
+            transition: border-color 0.2s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(211, 84, 0, 0.1);
+        }
+
+        .chat-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 10px 6px;
+            font-size: 14px;
+            font-family: var(--font-ui);
+            color: var(--text-color);
+            outline: none;
+        }
+
+        .voice-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 6px;
+            border-radius: 50%;
+            transition: color 0.2s, background-color 0.2s;
+        }
+
+        .voice-btn:hover, .voice-btn.listening {
+            color: var(--primary-color);
+            background-color: var(--primary-light);
+        }
+
+        .voice-btn.listening {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color var(--transition-speed), transform 0.1s;
+            box-shadow: 0 4px 12px rgba(211, 84, 0, 0.3);
+        }
+
+        .send-btn:hover { background-color: var(--primary-hover); transform: scale(1.05); }
+
+        /* Cart & Order Modals / Drawers */
+        .modal-overlay {
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background-color: rgba(44, 62, 80, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex;
+            justify-content: flex-end;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .side-modal {
+            width: 440px;
+            height: 100%;
+            background-color: var(--panel-bg);
+            box-shadow: -8px 0 32px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .side-modal {
+            transform: translateX(0);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .close-modal-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .cart-modal-body {
+            flex: 1;
+            padding: 20px 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .cart-item-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #F0EDE5;
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-item-name {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .cart-item-price {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #F8F6F0;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .qty-btn {
+            background: none;
+            border: none;
+            font-weight: 800;
+            font-size: 14px;
+            color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .form-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-color);
+            margin-top: 6px;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .input-field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+            font-family: var(--font-ui);
+            color: var(--text-color);
+            background-color: #FAF9F5;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            background-color: #FFF;
+        }
+
+        .promo-box {
+            display: flex;
+            gap: 8px;
+        }
+
+        .promo-input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .apply-promo-btn {
+            background-color: var(--text-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .cart-summary {
+            background-color: #FAF9F5;
+            padding: 14px;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 13px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .summary-row.total {
+            border-top: 1px solid var(--border-color);
+            padding-top: 8px;
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+
+        .checkout-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 14px rgba(211, 84, 0, 0.3);
+            transition: background-color 0.2s;
+        }
+
+        .checkout-btn:hover { background-color: var(--primary-hover); }
+
+        /* Order Tracking Stepper */
+        .stepper {
+            display: flex;
+            justify-content: space-between;
+            margin: 16px 0;
+            position: relative;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            z-index: 2;
+        }
+
+        .step.active {
+            color: var(--primary-color);
+        }
+
+        .step-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #EEE;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4px;
+        }
+
+        .step.active .step-icon {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        @media (max-width: 850px) {
+            .menu-drawer { display: none; }
+            .app-container { height: 100vh; border-radius: 0; }
+            .side-modal { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Header -->
+    <header class="chat-header">
+        <div class="brand-section">
+            <div class="brand-logo">A</div>
+            <div class="brand-title">
+                <h1>Aahara</h1>
+                <p>AI Culinary Assistant</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button class="header-btn" onclick="toggleMenuDrawer()">
+                🍽️ <span class="hide-mobile">Menu</span>
+            </button>
+            <button class="header-btn" onclick="openOrdersModal()">
+                📦 <span class="hide-mobile">Orders</span>
+            </button>
+            <button class="header-btn cart-btn" onclick="openCartModal()">
+                🛒 Cart
+                <span class="cart-badge" id="cartBadge">0</span>
+            </button>
+            <button class="header-btn" onclick="resetChat()">
+                🔄 Reset
+            </button>
+        </div>
+    </header>
+
+    <div class="main-body">
+        <!-- Visual Menu Gallery Sidebar -->
+        <aside class="menu-drawer" id="menuDrawer">
+            <div class="menu-drawer-header">
+                <h3>Explore Menu</h3>
+                <div class="category-tabs" id="categoryTabs">
+                    <button class="tab-pill active" onclick="filterCategory('all', this)">All</button>
+                    <button class="tab-pill" onclick="filterCategory('veg', this)">🌱 Veg</button>
+                    <button class="tab-pill" onclick="filterCategory('nonveg', this)">🍗 Non-Veg</button>
+                    <button class="tab-pill" onclick="filterCategory('Pizza', this)">🍕 Pizza</button>
+                    <button class="tab-pill" onclick="filterCategory('Burger', this)">🍔 Burgers</button>
+                    <button class="tab-pill" onclick="filterCategory('Biryani', this)">🍚 Biryani</button>
+                    <button class="tab-pill" onclick="filterCategory('Drinks', this)">🥤 Drinks</button>
+                    <button class="tab-pill" onclick="filterCategory('Desserts', this)">🍰 Desserts</button>
+                </div>
+            </div>
+
+            <div class="menu-grid" id="menuGrid">
+                <!-- Food Cards Rendered Dynamically -->
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-screen">
+            <div class="messages-container" id="messagesContainer">
+                <div class="message agent-message">
+                    Welcome to <strong>Aahara</strong>! 🍽️<br>
+                    I can help you explore our menu, filter vegetarian or budget dishes, manage your cart, apply discount codes, collect delivery details, and track live orders.<br><br>
+                    What would you like to order today?
+                </div>
+            </div>
+
+            <!-- Quick Action Prompt Chips -->
+            <div class="suggestion-chips">
+                <div class="chip" onclick="sendQuickPrompt('Show me the full menu with prices')">📋 Full Menu</div>
+                <div class="chip" onclick="sendQuickPrompt('Show me vegetarian dishes under ₹200')">🌱 Veg Under ₹200</div>
+                <div class="chip" onclick="sendQuickPrompt('Apply promo code AAHARA10')">🎟️ Promo AAHARA10</div>
+                <div class="chip" onclick="sendQuickPrompt('What is in my cart?')">🛒 View Cart</div>
+                <div class="chip" onclick="sendQuickPrompt('Track my latest order')">📦 Track Order</div>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Ask Aahara to search menu, add items, place order..." onkeypress="handleKeyPress(event)">
+                    <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice Input">🎙️</button>
+                </div>
+                <button class="send-btn" onclick="sendMessage()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Cart Modal Drawer with Customer Details Form -->
+    <div class="modal-overlay" id="cartModalOverlay">
+        <div class="side-modal">
+            <div class="modal-header">
+                <h3>Your Cart 🛒</h3>
+                <button class="close-modal-btn" onclick="closeCartModal()">✕</button>
+            </div>
+            <div class="cart-modal-body">
+                <div id="cartItemsList">
+                    <!-- Rendered via JS -->
+                </div>
+
+                <div class="promo-box">
+                    <input type="text" class="promo-input" id="promoInput" placeholder="Promo Code (AAHARA10)">
+                    <button class="apply-promo-btn" onclick="submitPromoCode()">Apply</button>
+                </div>
+
+                <!-- Customer Delivery Details Form -->
+                <div class="input-field-group">
+                    <div class="form-section-title">👤 Customer Information</div>
+                    <input type="text" class="form-input" id="customerNameInput" placeholder="Full Name (e.g. Rahul Sharma)">
+                    <input type="tel" class="form-input" id="customerPhoneInput" placeholder="Phone Number (e.g. 9876543210)">
+                    <textarea class="form-input" id="deliveryAddressInput" rows="2" style="resize:none;" placeholder="Complete Delivery Address (e.g. Flat 402, Sunshine Apts, MG Road)"></textarea>
+                    <input type="text" class="form-input" id="orderNotesInput" placeholder="Special Cooking Notes (e.g. extra spicy, no onions)">
+                </div>
+
+                <div class="cart-summary" id="cartSummaryBox">
+                    <div class="summary-row"><span>Subtotal:</span><span id="summarySubtotal">₹0.00</span></div>
+                    <div class="summary-row" style="color: var(--accent-green);"><span>Discount:</span><span id="summaryDiscount">-₹0.00</span></div>
+                    <div class="summary-row"><span>Taxes (5% GST):</span><span id="summaryTax">₹0.00</span></div>
+                    <div class="summary-row total"><span>Total Amount:</span><span id="summaryTotal">₹0.00</span></div>
+                </div>
+
+                <button class="checkout-btn" onclick="checkoutViaCartModal()">Place Order via AI</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders History Modal -->
+    <div class="modal-overlay" id="ordersModalOverlay">
+        <div class="side-modal">
+            <div class="modal-header">
+                <h3>Order History & Live Tracker 📦</h3>
+                <button class="close-modal-btn" onclick="closeOrdersModal()">✕</button>
+            </div>
+            <div class="cart-modal-body" id="ordersModalBody">
+                <!-- Rendered via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let fullMenuCache = [];
+    let currentCategoryFilter = 'all';
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchMenuData();
+        fetchCartState();
+    });
+
+    async function fetchMenuData() {
+        try {
+            const res = await fetch("/api/menu");
+            const data = await res.json();
+            if (data.found && data.items) {
+                fullMenuCache = data.items;
+                renderMenuGrid();
+            }
+        } catch (e) {
+            console.error("Error fetching menu:", e);
+        }
+    }
+
+    function renderMenuGrid() {
+        const grid = document.getElementById("menuGrid");
+        grid.innerHTML = "";
+
+        const filtered = fullMenuCache.filter(item => {
+            if (currentCategoryFilter === 'all') return true;
+            if (currentCategoryFilter === 'veg') return item.is_veg === 1;
+            if (currentCategoryFilter === 'nonveg') return item.is_veg === 0;
+            return item.category === currentCategoryFilter;
+        });
+
+        filtered.forEach(item => {
+            const card = document.createElement("div");
+            card.className = "food-card";
+            const vegBadge = item.is_veg === 1 ? '<span class="food-badge badge-veg">🌱 VEG</span>' : '<span class="food-badge badge-nonveg">🍗 NON-VEG</span>';
+            const imgUrl = item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80';
+
+            card.innerHTML = `
+                <img src="${imgUrl}" alt="${item.name}">
+                <div class="food-details">
+                    <div class="food-title-row">
+                        <span class="food-name">${item.name}</span>
+                        ${vegBadge}
+                    </div>
+                    <div class="food-desc">${item.description || ''}</div>
+                    <div class="food-bottom-row">
+                        <span class="food-price">₹${item.price}</span>
+                        <span class="food-rating">⭐ ${item.rating || 4.5}</span>
+                        <button class="add-card-btn" onclick="modifyCartAction('add', ${item.id}, 1)">+ Add</button>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function filterCategory(cat, btn) {
+        currentCategoryFilter = cat;
+        document.querySelectorAll(".tab-pill").forEach(b => b.classList.remove("active"));
+        if (btn) btn.classList.add("active");
+        renderMenuGrid();
+    }
+
+    async function fetchCartState() {
+        try {
+            const res = await fetch("/cart");
+            const data = await res.json();
+            updateCartUI(data);
+        } catch (e) {
+            console.error("Cart fetch error:", e);
+        }
+    }
+
+    function updateCartUI(data) {
+        const badge = document.getElementById("cartBadge");
+        const itemsList = document.getElementById("cartItemsList");
+        
+        let itemCount = 0;
+        if (data.items) {
+            data.items.forEach(i => itemCount += i.quantity);
+        }
+        badge.innerText = itemCount;
+
+        if (itemsList) {
+            itemsList.innerHTML = "";
+            if (!data.items || data.items.length === 0) {
+                itemsList.innerHTML = "<p style='color: var(--text-muted); font-size: 13px; text-align: center;'>Your cart is currently empty.</p>";
+            } else {
+                data.items.forEach(i => {
+                    const row = document.createElement("div");
+                    row.className = "cart-item-row";
+                    row.innerHTML = `
+                        <div class="cart-item-info">
+                            <div class="cart-item-name">${i.name}</div>
+                            <div class="cart-item-price">₹${i.price} × ${i.quantity} = <strong>₹${i.subtotal}</strong></div>
+                        </div>
+                        <div class="qty-controls">
+                            <button class="qty-btn" onclick="modifyCartAction('update', ${i.id}, ${i.quantity - 1})">-</button>
+                            <span style="font-size: 12px; font-weight: 700;">${i.quantity}</span>
+                            <button class="qty-btn" onclick="modifyCartAction('update', ${i.id}, ${i.quantity + 1})">+</button>
+                        </div>
+                        <button style="border:none; background:none; color:var(--text-muted); cursor:pointer; font-size: 14px;" onclick="modifyCartAction('remove', ${i.id})">🗑️</button>
+                    `;
+                    itemsList.appendChild(row);
+                });
+            }
+        }
+
+        document.getElementById("summarySubtotal").innerText = `₹${(data.subtotal || 0).toFixed(2)}`;
+        document.getElementById("summaryDiscount").innerText = `-₹${(data.discount || 0).toFixed(2)}`;
+        document.getElementById("summaryTax").innerText = `₹${(data.tax || 0).toFixed(2)}`;
+        document.getElementById("summaryTotal").innerText = `₹${(data.total || 0).toFixed(2)}`;
+        if (data.promo_code) {
+            document.getElementById("promoInput").value = data.promo_code;
+        }
+    }
+
+    async function modifyCartAction(action, itemId, qty = 1, code = "") {
+        try {
+            const res = await fetch("/api/cart/modify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: action, item_id: itemId, quantity: qty, code: code })
+            });
+            const data = await res.json();
+            if (data.cart_state) {
+                updateCartUI(data.cart_state);
+            }
+        } catch (e) {
+            console.error("Modify cart error:", e);
+        }
+    }
+
+    function submitPromoCode() {
+        const code = document.getElementById("promoInput").value;
+        modifyCartAction("promo", null, null, code);
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById("chatInput");
+        const text = input.value.trim();
+        if (!text) return;
+
+        appendMessage("user", text);
+        input.value = "";
+
+        const loadingMsg = appendMessage("agent", "Thinking... 🍳");
+
+        try {
+            const res = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await res.json();
+            loadingMsg.remove();
+            appendMessage("agent", data.response || "Something went wrong.");
+            fetchCartState();
+        } catch (e) {
+            loadingMsg.remove();
+            appendMessage("agent", "Network error. Please try again.");
+        }
+    }
+
+    function sendQuickPrompt(prompt) {
+        document.getElementById("chatInput").value = prompt;
+        sendMessage();
+    }
+
+    function appendMessage(sender, content) {
+        const container = document.getElementById("messagesContainer");
+        const msg = document.createElement("div");
+        msg.className = `message ${sender}-message`;
+        msg.innerHTML = formatMarkdown(content);
+        container.appendChild(msg);
+        container.scrollTop = container.scrollHeight;
+        return msg;
+    }
+
+    function formatMarkdown(text) {
+        if (!text) return "";
+        let formatted = text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\n/g, '<br>');
+            
+        if (formatted.includes('|')) {
+            const lines = text.split('\n');
+            let inTable = false;
+            let htmlTable = '<table>';
+            lines.forEach(l => {
+                if (l.trim().startsWith('|')) {
+                    if (!inTable) inTable = true;
+                    if (l.includes('---')) return;
+                    const cols = l.split('|').filter(c => c.trim() !== '');
+                    htmlTable += '<tr>' + cols.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+                }
+            });
+            if (inTable) {
+                htmlTable += '</table>';
+                return htmlTable;
+            }
+        }
+        return formatted;
+    }
+
+    function handleKeyPress(e) {
+        if (e.key === "Enter") sendMessage();
+    }
+
+    function toggleMenuDrawer() {
+        const drawer = document.getElementById("menuDrawer");
+        drawer.style.display = (drawer.style.display === "none") ? "flex" : "none";
+    }
+
+    function openCartModal() {
+        fetchCartState();
+        document.getElementById("cartModalOverlay").classList.add("active");
+    }
+
+    function closeCartModal() {
+        document.getElementById("cartModalOverlay").classList.remove("active");
+    }
+
+    async function openOrdersModal() {
+        document.getElementById("ordersModalOverlay").classList.add("active");
+        const body = document.getElementById("ordersModalBody");
+        body.innerHTML = "<p style='color: var(--text-muted); text-align: center;'>Loading order history...</p>";
+
+        try {
+            const res = await fetch("/api/orders");
+            const data = await res.json();
+            body.innerHTML = "";
+            if (!data.orders || data.orders.length === 0) {
+                body.innerHTML = "<p style='color: var(--text-muted); text-align: center;'>No past orders found.</p>";
+                return;
+            }
+
+            data.orders.forEach(o => {
+                const card = document.createElement("div");
+                card.style.cssText = "background: #FAF9F5; padding: 14px; border-radius: 14px; border: 1px solid var(--border-color); margin-bottom: 12px;";
+                const cName = o.customer_name || 'Customer';
+                const cPhone = o.customer_phone ? ` • 📞 ${o.customer_phone}` : '';
+                const cAddr = o.delivery_address ? `<div style="font-size:11px; color:var(--text-color); margin-top:4px;">📍 <strong>Delivery Address:</strong> ${o.delivery_address}</div>` : '';
+
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; font-weight:700; font-size:14px;">
+                        <span>Order #${o.order_id} — ${cName}${cPhone}</span>
+                        <span style="color: var(--primary-color);">₹${o.total}</span>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted); margin: 4px 0;">${o.created_at || ''}</div>
+                    ${cAddr}
+                    <div class="stepper">
+                        <div class="step active"><div class="step-icon">📝</div>Placed</div>
+                        <div class="step ${o.status !== 'Placed' ? 'active' : ''}"><div class="step-icon">👨‍🍳</div>Preparing</div>
+                        <div class="step ${o.status === 'Delivered' ? 'active' : ''}"><div class="step-icon">🛵</div>On Way</div>
+                        <div class="step ${o.status === 'Delivered' ? 'active' : ''}"><div class="step-icon">🎉</div>Delivered</div>
+                    </div>
+                `;
+                body.appendChild(card);
+            });
+        } catch (e) {
+            body.innerHTML = "<p style='color: var(--accent-red); text-align: center;'>Error loading orders.</p>";
+        }
+    }
+
+    function closeOrdersModal() {
+        document.getElementById("ordersModalOverlay").classList.remove("active");
+    }
+
+    function checkoutViaCartModal() {
+        closeCartModal();
+        const name = document.getElementById("customerNameInput").value.trim();
+        const phone = document.getElementById("customerPhoneInput").value.trim();
+        const addr = document.getElementById("deliveryAddressInput").value.trim();
+        const notes = document.getElementById("orderNotesInput").value.trim();
+        const code = document.getElementById("promoInput").value.trim();
+        
+        let prompt = "Please place my order";
+        if (name) prompt += ` for customer ${name}`;
+        if (phone) prompt += `, phone ${phone}`;
+        if (addr) prompt += `, delivery address: ${addr}`;
+        if (code) prompt += `, with promo code ${code}`;
+        if (notes) prompt += `, special notes: ${notes}`;
+        
+        sendQuickPrompt(prompt);
+    }
+
+    async function resetChat() {
+        await fetch("/clear_chat", { method: "POST" });
+        await modifyCartAction("clear");
+        document.getElementById("messagesContainer").innerHTML = `
+            <div class="message agent-message">
+                Chat & Cart reset! How can I assist you with your order now? 🍽️
+            </div>
+        `;
+    }
+
+    function toggleVoiceInput() {
+        const btn = document.getElementById("voiceBtn");
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert("Voice dictation is not supported in this browser. Please try Chrome or Edge.");
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+
+        btn.classList.add("listening");
+        recognition.start();
+
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById("chatInput").value = transcript;
+            btn.classList.remove("listening");
+            sendMessage();
+        };
+
+        recognition.onerror = function() {
+            btn.classList.remove("listening");
+        };
+
+        recognition.onend = function() {
+            btn.classList.remove("listening");
+        };
+    }
+</script>
+</body>
+</html>
