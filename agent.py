@@ -262,20 +262,27 @@ def execute_tool(name, arguments):
     """
     if not isinstance(arguments, dict):
         arguments = {}
-    for k in list(arguments.keys()):
-        if arguments[k] is None:
-            arguments[k] = ""
 
     if name == "search_menu":
+        query = arguments.get("query")
+        if query == "null" or query is None:
+            query = ""
+        is_veg = arguments.get("is_veg")
+        if is_veg == "null" or is_veg == "":
+            is_veg = None
+        max_price = arguments.get("max_price")
+        if max_price == "null" or max_price == "" or max_price == 0:
+            max_price = None
+
         return search_menu(
-            query=arguments.get("query"),
-            is_veg=arguments.get("is_veg"),
-            max_price=arguments.get("max_price")
+            query=query,
+            is_veg=is_veg,
+            max_price=max_price
         )
     elif name == "get_full_menu":
         return get_full_menu()
     elif name == "add_to_cart":
-        return add_to_cart(arguments.get("item_id"), arguments.get("quantity"))
+        return add_to_cart(arguments.get("item_id"), arguments.get("quantity") or 1)
     elif name == "remove_from_cart":
         return remove_from_cart(arguments.get("item_id"), arguments.get("quantity"))
     elif name == "clear_cart":
@@ -356,7 +363,8 @@ def run_agent(user_message, history=None):
         "8. Provide clear subtotal, discount, and order totals in confirmation messages.\n"
         "9. Use track_order for tracking order status and get_order_history for past orders.\n"
         "10. Handle special cooking requests (e.g. 'extra spicy', 'no onions') using the notes parameter when placing order.\n"
-        "11. PAYMENT & UPI QR CODE DISPLAY: When the user asks about payment options or chooses to pay via UPI, ALWAYS call get_payment_details tool first. In your response, display the Restaurant UPI ID (e.g. `aahara@upi`), Merchant Name, Bank Info, AND render the UPI QR Code image using HTML or Markdown image format `<img src=\"<qr_image_url>\" style=\"width:150px; border-radius:10px;\">` or `![UPI QR Code](<qr_image_url>)` so the user can scan the QR code and pay directly from chat!"
+        "11. PAYMENT & UPI QR CODE DISPLAY: When the user asks about payment options or chooses to pay via UPI, ALWAYS call get_payment_details tool first. In your response, display the Restaurant UPI ID (e.g. `aahara@upi`), Merchant Name, Bank Info, AND render the UPI QR Code image using HTML or Markdown image format `<img src=\"<qr_image_url>\" style=\"width:150px; border-radius:10px;\">` or `![UPI QR Code](<qr_image_url>)` so the user can scan the QR code and pay directly from chat!\n"
+        "12. TOOL CALL ARGUMENTS: Omit optional parameters (like max_price or is_veg) if not specified by the user. Do NOT pass null for optional parameters."
     )
     
     clean_history = []
@@ -388,12 +396,25 @@ def run_agent(user_message, history=None):
             for tc in message.tool_calls:
                 if "<|" in tc.function.name:
                     tc.function.name = tc.function.name.split("<|")[0]
+                
+                # Sanitize arguments string to remove null values before appending to messages
+                if tc.function.arguments:
+                    try:
+                        raw_args = json.loads(tc.function.arguments)
+                        if isinstance(raw_args, dict):
+                            clean_args = {k: v for k, v in raw_args.items() if v is not None and v != "null"}
+                            tc.function.arguments = json.dumps(clean_args)
+                    except Exception:
+                        pass
 
         messages.append(message.model_dump(exclude_none=True))
         
         for tool_call in message.tool_calls:
             tool_name = tool_call.function.name
-            tool_args = json.loads(tool_call.function.arguments)
+            try:
+                tool_args = json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
+            except Exception:
+                tool_args = {}
             
             print(f"[TOOL] {tool_name}")
             print(f"[ARGS] {tool_args}")
