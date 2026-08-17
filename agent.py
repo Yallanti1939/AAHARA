@@ -46,7 +46,7 @@ def get_agent_client_and_model(force_provider=None):
             api_key=gemini_key,
             base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
         )
-        model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+        model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
         return client, model, "gemini"
 
     raise ValueError("No API key (GROQ_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY) found in environment or .env file.")
@@ -325,6 +325,21 @@ def make_completion_call(messages):
             return response, active_provider
         except Exception as e:
             err_str = str(e)
+            if active_provider == "gemini":
+                # Fallback to secondary Gemini models if primary model is rate limited
+                for alt_model in ["gemini-3.7-flash", "gemini-3.5-flash-lite", "gemma-4-31b-it"]:
+                    if alt_model != model_name:
+                        try:
+                            response = llm_client.chat.completions.create(
+                                model=alt_model,
+                                messages=messages,
+                                tools=tools,
+                                tool_choice="auto"
+                            )
+                            return response, "gemini"
+                        except Exception:
+                            continue
+
             if active_provider in ("groq", "openai"):
                 try:
                     g_client, g_model, g_prov = get_agent_client_and_model(force_provider="gemini")
@@ -339,7 +354,7 @@ def make_completion_call(messages):
                     pass
 
             if ("429" in err_str or "RESOURCE_EXHAUSTED" in err_str or "quota" in err_str.lower()) and attempt < 2:
-                time.sleep(3 * (attempt + 1))
+                time.sleep(2 * (attempt + 1))
             else:
                 raise e
 
