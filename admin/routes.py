@@ -4,7 +4,7 @@ from . import admin_bp
 from tools import (
     get_order_history, update_order_status,
     get_full_menu, toggle_menu_availability, add_menu_item,
-    delete_menu_item, get_admin_analytics
+    delete_menu_item, clear_order_history, get_admin_analytics
 )
 
 ADMIN_EMAIL = "admin@aahara.com"
@@ -111,4 +111,12 @@ def api_admin_delete_menu():
     item_id = data.get("item_id")
 
     res = delete_menu_item(item_id)
+    return jsonify(res)
+
+@admin_bp.route("/api/orders/clear", methods=["POST"])
+def api_admin_clear_orders():
+    if not session.get("admin_logged_in"):
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+    res = clear_order_history()
     return jsonify(res)

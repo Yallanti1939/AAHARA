@@ -199,6 +199,23 @@ def run_tests():
 
     print("PASS: Admin menu management (add & delete) verified successfully.")
 
+    # --------------------------------------------------
+    # Test 8: Clear Order History
+    # --------------------------------------------------
+    print("\n[TEST 8] Testing Clear Orders Functionality...")
+    clear_res = tools.clear_order_history()
+    print(f"Clear Orders Result: {clear_res.get('message')}")
+    if not clear_res.get("success"):
+        print("FAIL: Could not clear order history.")
+        return False
+
+    history_after = tools.get_order_history()
+    if history_after["count"] != 0:
+        print(f"FAIL: Expected 0 orders after clear, got {history_after['count']}.")
+        return False
+
+    print("PASS: Clear orders history functionality verified successfully.")
+
     print("\n==================================================")
     print("ALL ENHANCED TESTS PASSED! Aahara is world-class.")
     print("==================================================")

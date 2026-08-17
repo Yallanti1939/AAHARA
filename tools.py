@@ -529,3 +529,16 @@ def get_admin_analytics():
         "delivered_orders": delivered_orders,
         "cancelled_orders": cancelled_orders
     }
+
+def clear_order_history():
+    """
+    Clears all order history from the database and resets autoincrement ID sequence.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM orders")
+    cursor.execute("DELETE FROM sqlite_sequence WHERE name='orders'")
+    conn.commit()
+    conn.close()
+
+    return {"success": True, "message": "All order history has been cleared successfully."}
